@@ -1,44 +1,27 @@
-name: Build Unsigned IPA
+name: Build iOS App
 
 on:
-  workflow_dispatch:
-    inputs:
-      configuration:
-        description: 'Build configuration'
-        required: true
-        default: 'Release'
-        type: choice
-        options:
-          - Release
-          - Debug
   push:
-    branches:
-      - main
+    branches: [main, master]
     paths:
       - 'ios/**'
   pull_request:
-    branches:
-      - main
+    branches: [main, master]
     paths:
       - 'ios/**'
-
-env:
-  SCHEME: ChapterWise
-  PROJECT_DIR: ios/ChapterWise
-  XCODE_VERSION: '16.2'
+  workflow_dispatch:
 
 jobs:
-  build-unsigned-ipa:
-    name: Build Unsigned IPA
+  build:
+    name: Build ChapterWise IPA
     runs-on: macos-15
-    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Select Xcode version
-        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -47,60 +30,43 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate Xcode project
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: xcodegen generate
-
-      - name: List available schemes
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: xcodebuild -project ${{ env.SCHEME }}.xcodeproj -list
-
-      - name: Build archive (unsigned)
-        working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          CONFIGURATION="${{ github.event.inputs.configuration || 'Release' }}"
+          cd ios/ChapterWise
+          xcodegen generate
 
+      - name: Archive for iOS device
+        run: |
+          cd ios/ChapterWise
           xcodebuild archive \
-            -project ${{ env.SCHEME }}.xcodeproj \
-            -scheme ${{ env.SCHEME }} \
-            -configuration "$CONFIGURATION" \
-            -archivePath ${{ runner.temp }}/${{ env.SCHEME }}.xcarchive \
-            -destination 'generic/platform=iOS' \
+            -project ChapterWise.xcodeproj \
+            -scheme ChapterWise \
             -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_IDENTITY="" \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/ChapterWise.xcarchive \
+            CODE_SIGN_IDENTITY=- \
             CODE_SIGNING_REQUIRED=NO \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE="" \
-            SWIFT_STRICT_CONCURRENCY=minimal \
-            SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
-            GCC_TREAT_WARNINGS_AS_ERRORS=NO \
-            SWIFT_VERSION=5
+            CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
-          echo "Archive created successfully"
-          ls -la "${{ runner.temp }}/${{ env.SCHEME }}.xcarchive/Products/Applications/"
-
-      - name: Create unsigned IPA
+      - name: Create IPA from archive
         run: |
-          ARCHIVE_PATH="${{ runner.temp }}/${{ env.SCHEME }}.xcarchive"
-          IPA_DIR="${{ runner.temp }}/ipa"
-          PAYLOAD_DIR="${IPA_DIR}/Payload"
+          mkdir -p $RUNNER_TEMP/Payload
+          cp -R $RUNNER_TEMP/ChapterWise.xcarchive/Products/Applications/ChapterWise.app $RUNNER_TEMP/Payload/
+          cd $RUNNER_TEMP
+          zip -r ChapterWise.ipa Payload
+          echo "IPA size: $(du -h ChapterWise.ipa | cut -f1)"
 
-          mkdir -p "${PAYLOAD_DIR}"
+      - name: Prepare artifact
+        run: |
+          mkdir -p artifact
+          cp $RUNNER_TEMP/ChapterWise.ipa artifact/
+          echo "Build completed at $(date)" > artifact/BUILD_INFO.txt
+          echo "Unsigned IPA - use AltStore, Sideloadly, or similar to install." >> artifact/BUILD_INFO.txt
 
-          # Copy the .app bundle into Payload directory
-          cp -r "${ARCHIVE_PATH}/Products/Applications/${{ env.SCHEME }}.app" "${PAYLOAD_DIR}/"
-
-          # Create the IPA (which is just a zip of the Payload directory)
-          cd "${IPA_DIR}"
-          zip -r "${{ runner.temp }}/${{ env.SCHEME }}-unsigned.ipa" Payload
-
-          echo "IPA created successfully"
-          ls -lh "${{ runner.temp }}/${{ env.SCHEME }}-unsigned.ipa"
-
-      - name: Upload unsigned IPA artifact
+      - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.SCHEME }}-unsigned-ipa
-          path: ${{ runner.temp }}/${{ env.SCHEME }}-unsigned.ipa
-          retention-days: 14
-          if-no-files-found: error
+          name: ChapterWise-ipa
+          path: artifact/
+          retention-days: 30
