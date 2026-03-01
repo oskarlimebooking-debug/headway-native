@@ -34,6 +34,14 @@ jobs:
           cd ios/ChapterWise
           xcodegen generate
 
+      - name: Install iOS Simulator Runtime
+        run: |
+          echo "Available runtimes before install:"
+          xcrun simctl list runtimes
+          xcodebuild -downloadPlatform iOS
+          echo "Available runtimes after install:"
+          xcrun simctl list runtimes
+
       - name: Archive for iOS device
         run: |
           cd ios/ChapterWise
