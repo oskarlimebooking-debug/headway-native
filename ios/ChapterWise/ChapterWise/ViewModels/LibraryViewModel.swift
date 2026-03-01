@@ -76,8 +76,9 @@ class LibraryViewModel {
             return nil
         }
 
+        let bookId = book.id
         let descriptor = FetchDescriptor<Chapter>(
-            predicate: #Predicate { $0.bookId == book.id && !$0.isComplete },
+            predicate: #Predicate { $0.bookId == bookId && $0.isComplete == false },
             sortBy: [SortDescriptor(\Chapter.order)]
         )
 
