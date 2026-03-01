@@ -576,18 +576,3 @@ enum GeminiServiceError: LocalizedError {
     }
 }
 
-// MARK: - String Extension (used by GeminiService)
-private extension String {
-    var extractedJSON: String {
-        var text = self.trimmingCharacters(in: .whitespacesAndNewlines)
-        if text.hasPrefix("```json") {
-            text = String(text.dropFirst(7))
-        } else if text.hasPrefix("```") {
-            text = String(text.dropFirst(3))
-        }
-        if text.hasSuffix("```") {
-            text = String(text.dropLast(3))
-        }
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-}

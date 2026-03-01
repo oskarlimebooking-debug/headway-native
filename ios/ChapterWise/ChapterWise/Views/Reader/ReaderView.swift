@@ -107,7 +107,13 @@ struct ReaderView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(chapter.isComplete ? Theme.success : Theme.accentGradient)
+                        .background {
+                            if chapter.isComplete {
+                                Theme.success
+                            } else {
+                                Theme.accentGradient
+                            }
+                        }
                         .cornerRadius(Theme.radiusMd)
                     }
                     .padding(.horizontal, 16)

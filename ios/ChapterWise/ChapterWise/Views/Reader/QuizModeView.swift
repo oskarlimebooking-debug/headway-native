@@ -140,10 +140,3 @@ struct QuizModeView: View {
         }
     }
 }
-
-// Array safe subscript (repeated for local use in case Extensions not visible)
-private extension Array {
-    subscript(safe index: Index) -> Element? {
-        indices.contains(index) ? self[index] : nil
-    }
-}
