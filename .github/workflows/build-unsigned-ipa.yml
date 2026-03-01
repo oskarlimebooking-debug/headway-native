@@ -43,8 +43,10 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install dependencies
+        run: |
+          brew install xcodegen
+          gem install xcpretty
 
       - name: Generate Xcode project
         working-directory: ${{ env.PROJECT_DIR }}
@@ -57,6 +59,8 @@ jobs:
       - name: Build archive (unsigned)
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
+          set -o pipefail
+
           CONFIGURATION="${{ github.event.inputs.configuration || 'Release' }}"
 
           xcodebuild archive \
@@ -71,13 +75,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE="" \
-            | xcpretty --color || true
-
-          # Verify archive was created
-          if [ ! -d "${{ runner.temp }}/${{ env.SCHEME }}.xcarchive" ]; then
-            echo "::error::Archive was not created"
-            exit 1
-          fi
+            | xcpretty --color
 
           echo "Archive created successfully"
           ls -la "${{ runner.temp }}/${{ env.SCHEME }}.xcarchive/Products/Applications/"
