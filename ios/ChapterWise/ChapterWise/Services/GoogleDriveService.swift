@@ -74,7 +74,7 @@ actor GoogleDriveService {
         let fileId = try await findOrCreateSyncFile(token: token)
 
         // Download existing sync data
-        let remoteData = try await downloadSyncFile(fileId: fileId, token: token)
+        _ = try await downloadSyncFile(fileId: fileId, token: token)
 
         // Export local data
         let localData = try await DataExportService.shared.exportAll(context: context)

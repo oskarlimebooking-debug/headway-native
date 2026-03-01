@@ -172,7 +172,7 @@ class AudioPlayerService: NSObject, AVAudioPlayerDelegate {
 
     // MARK: - Now Playing Info
     private func updateNowPlayingInfo() {
-        var info: [String: Any] = [
+        let info: [String: Any] = [
             MPMediaItemPropertyTitle: currentChapterTitle ?? "Unknown",
             MPMediaItemPropertyArtist: currentBookTitle ?? "ChapterWise",
             MPMediaItemPropertyPlaybackDuration: duration,
