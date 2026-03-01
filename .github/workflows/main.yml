@@ -1,0 +1,64 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'SummaryPro/**'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'SummaryPro/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build SummaryPro IPA
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Archive for iOS device
+        run: |
+          cd SummaryPro
+          xcodebuild archive \
+            -project SummaryPro.xcodeproj \
+            -scheme SummaryPro \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/SummaryPro.xcarchive \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+
+      - name: Create IPA from archive
+        run: |
+          mkdir -p $RUNNER_TEMP/Payload
+          cp -R $RUNNER_TEMP/SummaryPro.xcarchive/Products/Applications/SummaryPro.app $RUNNER_TEMP/Payload/
+          cd $RUNNER_TEMP
+          zip -r SummaryPro.ipa Payload
+          echo "IPA size: $(du -h SummaryPro.ipa | cut -f1)"
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p artifact
+          cp $RUNNER_TEMP/SummaryPro.ipa artifact/
+          echo "Build completed at $(date)" > artifact/BUILD_INFO.txt
+          echo "Unsigned IPA - use AltStore, Sideloadly, or similar to install." >> artifact/BUILD_INFO.txt
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SummaryPro-ipa
+          path: artifact/
+          retention-days: 30
