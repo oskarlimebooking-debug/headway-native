@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import Compression
 
 actor EPUBImportService {
     static let shared = EPUBImportService()

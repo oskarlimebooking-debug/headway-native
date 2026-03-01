@@ -47,7 +47,7 @@ class TTSService: NSObject, AVSpeechSynthesizerDelegate {
         spokenLength = 0
 
         // Configure audio session
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenContent)
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
         try? AVAudioSession.sharedInstance().setActive(true)
 
         synthesizer.speak(utterance)
